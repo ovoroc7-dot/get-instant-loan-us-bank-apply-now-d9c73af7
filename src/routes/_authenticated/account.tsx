@@ -276,9 +276,14 @@ function AccountPage() {
         </section>
 
         <section className="mt-8 rounded-xl border bg-card shadow-[var(--shadow-card)]">
-          <h2 className="border-b px-5 py-4 text-lg font-semibold text-foreground">
-            Disbursements
-          </h2>
+          <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              Disbursements
+            </h2>
+            <Button size="sm" onClick={() => setRequestLoan(true)}>
+              <DollarSign className="mr-1.5 h-4 w-4" /> Request a loan
+            </Button>
+          </div>
           <div className="divide-y">
             {loans.map((l) => (
               <button
@@ -356,6 +361,13 @@ function AccountPage() {
       <LoanTrackerDialog
         loan={loanDetail}
         onClose={() => setLoanDetail(null)}
+      />
+
+      <RequestLoanDialog
+        open={requestLoan}
+        profile={profile}
+        onClose={() => setRequestLoan(false)}
+        onDone={load}
       />
 
       <MoneyDialog
