@@ -85,6 +85,17 @@ type Loan = {
   disbursed_at: string | null;
 };
 
+type Profile = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  cell_phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
 type ActionKind =
   | "internal"
   | "zelle"
@@ -105,6 +116,8 @@ function AccountPage() {
   const [action, setAction] = useState<ActionKind>(null);
   const [receipt, setReceipt] = useState<Txn | null>(null);
   const [loanDetail, setLoanDetail] = useState<Loan | null>(null);
+  const [requestLoan, setRequestLoan] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const load = useCallback(async () => {
     const [a, t, l, p] = await Promise.all([
@@ -118,12 +131,18 @@ function AccountPage() {
         .from("loan_applications")
         .select("id, amount, apr, term_months, status, created_at, disbursed_at")
         .order("created_at", { ascending: false }),
-      supabase.from("profiles").select("first_name").maybeSingle(),
+      supabase
+        .from("profiles")
+        .select(
+          "first_name, last_name, email, cell_phone, street, city, state, zip",
+        )
+        .maybeSingle(),
     ]);
     setAccounts((a.data as Account[]) ?? []);
     setTxns((t.data as Txn[]) ?? []);
     setLoans((l.data as Loan[]) ?? []);
     setName(p.data?.first_name ?? "");
+    setProfile((p.data as Profile) ?? null);
     setLoading(false);
   }, []);
 
@@ -257,9 +276,14 @@ function AccountPage() {
         </section>
 
         <section className="mt-8 rounded-xl border bg-card shadow-[var(--shadow-card)]">
-          <h2 className="border-b px-5 py-4 text-lg font-semibold text-foreground">
-            Disbursements
-          </h2>
+          <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              Disbursements
+            </h2>
+            <Button size="sm" onClick={() => setRequestLoan(true)}>
+              <DollarSign className="mr-1.5 h-4 w-4" /> Request a loan
+            </Button>
+          </div>
           <div className="divide-y">
             {loans.map((l) => (
               <button
@@ -337,6 +361,13 @@ function AccountPage() {
       <LoanTrackerDialog
         loan={loanDetail}
         onClose={() => setLoanDetail(null)}
+      />
+
+      <RequestLoanDialog
+        open={requestLoan}
+        profile={profile}
+        onClose={() => setRequestLoan(false)}
+        onDone={load}
       />
 
       <MoneyDialog
@@ -457,6 +488,149 @@ function StatusBadge({ status }: { status: Loan["status"] }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
       <Clock className="h-3.5 w-3.5" /> Under review
     </span>
+  );
+}
+
+function RequestLoanDialog({
+  open,
+  profile,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  profile: Profile | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState("25000");
+  const [term, setTerm] = useState("60");
+  const [purpose, setPurpose] = useState("");
+  const [ssn, setSsn] = useState("");
+  const [signature, setSignature] = useState("");
+  const [busy, setBusy] = useState(false);
+  const apr = 8.99;
+  const amt = Number(amount);
+  const valid =
+    amt >= 1000 && ssn.trim().length >= 4 && signature.trim().length > 2;
+
+  async function submit() {
+    setBusy(true);
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) {
+      setBusy(false);
+      toast.error("Please sign in again.");
+      return;
+    }
+    const { error } = await supabase.from("loan_applications").insert({
+      user_id: uid,
+      amount: amt,
+      apr,
+      term_months: Number(term),
+      first_name: profile?.first_name ?? "",
+      last_name: profile?.last_name ?? "",
+      ssn: ssn.trim(),
+      cell_phone: profile?.cell_phone ?? "",
+      email: profile?.email ?? "",
+      street: profile?.street ?? "",
+      city: profile?.city ?? "",
+      state: profile?.state ?? "",
+      zip: profile?.zip ?? "",
+      loan_purpose: purpose,
+      signature: signature.trim(),
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Loan request submitted — a loan officer is reviewing it.");
+    setPurpose("");
+    setSsn("");
+    setSignature("");
+    onClose();
+    onDone();
+  }
+
+  const monthly =
+    amt > 0
+      ? (amt * (apr / 100 / 12)) /
+        (1 - Math.pow(1 + apr / 100 / 12, -Number(term)))
+      : 0;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Request a loan</DialogTitle>
+          <DialogDescription>
+            Your details are already on file — confirm the amount and sign.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="req-amount">Loan amount</Label>
+            <Input
+              id="req-amount"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="req-term">Term</Label>
+            <Select value={term} onValueChange={setTerm}>
+              <SelectTrigger id="req-term">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24">24 months</SelectItem>
+                <SelectItem value="36">36 months</SelectItem>
+                <SelectItem value="48">48 months</SelectItem>
+                <SelectItem value="60">60 months</SelectItem>
+                <SelectItem value="84">84 months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="req-purpose">Purpose</Label>
+            <Input
+              id="req-purpose"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Debt consolidation, home project…"
+            />
+          </div>
+          <div>
+            <Label htmlFor="req-ssn">SSN</Label>
+            <Input
+              id="req-ssn"
+              value={ssn}
+              onChange={(e) => setSsn(e.target.value)}
+              placeholder="•••-••-••••"
+            />
+          </div>
+          <div>
+            <Label htmlFor="req-sign">Electronic signature</Label>
+            <Input
+              id="req-sign"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              placeholder="Type your full name"
+            />
+          </div>
+          <p className="rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
+            {apr}% APR · estimated {currency(monthly || 0)}/month for {term}{" "}
+            months. Approved funds are disbursed to your checking account.
+          </p>
+        </div>
+
+        <Button disabled={!valid || busy} onClick={submit}>
+          {busy ? "Submitting…" : "Submit loan request"}
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }
 
