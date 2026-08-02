@@ -85,8 +85,18 @@ type Loan = {
   disbursed_at: string | null;
 };
 
+type Profile = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  cell_phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
 type ActionKind =
-  | "internal"
   | "internal"
   | "zelle"
   | "external"
