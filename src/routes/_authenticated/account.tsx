@@ -105,6 +105,8 @@ function AccountPage() {
   const [action, setAction] = useState<ActionKind>(null);
   const [receipt, setReceipt] = useState<Txn | null>(null);
   const [loanDetail, setLoanDetail] = useState<Loan | null>(null);
+  const [requestLoan, setRequestLoan] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const load = useCallback(async () => {
     const [a, t, l, p] = await Promise.all([
@@ -118,12 +120,18 @@ function AccountPage() {
         .from("loan_applications")
         .select("id, amount, apr, term_months, status, created_at, disbursed_at")
         .order("created_at", { ascending: false }),
-      supabase.from("profiles").select("first_name").maybeSingle(),
+      supabase
+        .from("profiles")
+        .select(
+          "first_name, last_name, email, cell_phone, street, city, state, zip",
+        )
+        .maybeSingle(),
     ]);
     setAccounts((a.data as Account[]) ?? []);
     setTxns((t.data as Txn[]) ?? []);
     setLoans((l.data as Loan[]) ?? []);
     setName(p.data?.first_name ?? "");
+    setProfile((p.data as Profile) ?? null);
     setLoading(false);
   }, []);
 
