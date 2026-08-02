@@ -460,6 +460,99 @@ function StatusBadge({ status }: { status: Loan["status"] }) {
   );
 }
 
+function LoanTrackerDialog({
+  loan,
+  onClose,
+}: {
+  loan: Loan | null;
+  onClose: () => void;
+}) {
+  if (!loan) return null;
+  const submitted = new Date(loan.created_at);
+  const decided = loan.disbursed_at ? new Date(loan.disbursed_at) : null;
+  const steps = [
+    {
+      label: "Application submitted",
+      note: submitted.toLocaleString(),
+      done: true,
+    },
+    {
+      label: "Under review by loan officer",
+      note:
+        loan.status === "pending"
+          ? "In progress — you'll be notified the moment a decision is made."
+          : "Completed",
+      done: true,
+      active: loan.status === "pending",
+    },
+    {
+      label: loan.status === "declined" ? "Declined" : "Approved & disbursed",
+      note:
+        loan.status === "approved"
+          ? `Funds sent to your checking account${decided ? ` on ${decided.toLocaleString()}` : ""}`
+          : loan.status === "declined"
+            ? "Contact support for details."
+            : "Pending decision",
+      done: loan.status !== "pending",
+    },
+  ];
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Personal loan {currency(Number(loan.amount))}</DialogTitle>
+          <DialogDescription>
+            {Number(loan.apr)}% APR · {loan.term_months} months
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex justify-center">
+          <StatusBadge status={loan.status} />
+        </div>
+
+        <ol className="mt-4 space-y-4">
+          {steps.map((s, i) => (
+            <li key={i} className="flex gap-3">
+              <div className="mt-0.5">
+                {s.done ? (
+                  s.active ? (
+                    <Clock className="h-5 w-5 text-accent" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5 text-accent" />
+                  )
+                ) : (
+                  <Clock className="h-5 w-5 text-muted-foreground/50" />
+                )}
+              </div>
+              <div>
+                <p
+                  className={
+                    s.done
+                      ? "text-sm font-medium text-foreground"
+                      : "text-sm font-medium text-muted-foreground"
+                  }
+                >
+                  {s.label}
+                </p>
+                <p className="text-xs text-muted-foreground">{s.note}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-2 rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
+          Reference: {loan.id.slice(0, 8).toUpperCase()}
+        </div>
+
+        <Button variant="outline" onClick={onClose}>
+          Close
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ActionTile({
   icon,
   title,
