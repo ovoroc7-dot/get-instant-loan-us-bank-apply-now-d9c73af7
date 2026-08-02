@@ -87,6 +87,7 @@ type Loan = {
 
 type ActionKind =
   | "internal"
+  | "internal"
   | "zelle"
   | "external"
   | "paypal"
