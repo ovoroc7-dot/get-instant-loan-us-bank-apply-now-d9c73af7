@@ -104,6 +104,7 @@ function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<ActionKind>(null);
   const [receipt, setReceipt] = useState<Txn | null>(null);
+  const [loanDetail, setLoanDetail] = useState<Loan | null>(null);
 
   const load = useCallback(async () => {
     const [a, t, l, p] = await Promise.all([
@@ -261,18 +262,23 @@ function AccountPage() {
           </h2>
           <div className="divide-y">
             {loans.map((l) => (
-              <div key={l.id} className="flex items-center justify-between px-5 py-4">
+              <button
+                type="button"
+                key={l.id}
+                onClick={() => setLoanDetail(l)}
+                className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-accent/5"
+              >
                 <div>
                   <p className="font-medium text-foreground">
                     Personal loan {currency(Number(l.amount))}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {Number(l.apr)}% APR · {l.term_months} months · submitted{" "}
-                    {new Date(l.created_at).toLocaleDateString()}
+                    {new Date(l.created_at).toLocaleDateString()} · Track request
                   </p>
                 </div>
                 <StatusBadge status={l.status} />
-              </div>
+              </button>
             ))}
             {loans.length === 0 && (
               <p className="px-5 py-6 text-sm text-muted-foreground">
@@ -327,6 +333,11 @@ function AccountPage() {
           <ContactSupport />
         </section>
       </main>
+
+      <LoanTrackerDialog
+        loan={loanDetail}
+        onClose={() => setLoanDetail(null)}
+      />
 
       <MoneyDialog
         action={action}
