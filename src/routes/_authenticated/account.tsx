@@ -491,6 +491,149 @@ function StatusBadge({ status }: { status: Loan["status"] }) {
   );
 }
 
+function RequestLoanDialog({
+  open,
+  profile,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  profile: Profile | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState("25000");
+  const [term, setTerm] = useState("60");
+  const [purpose, setPurpose] = useState("");
+  const [ssn, setSsn] = useState("");
+  const [signature, setSignature] = useState("");
+  const [busy, setBusy] = useState(false);
+  const apr = 8.99;
+  const amt = Number(amount);
+  const valid =
+    amt >= 1000 && ssn.trim().length >= 4 && signature.trim().length > 2;
+
+  async function submit() {
+    setBusy(true);
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) {
+      setBusy(false);
+      toast.error("Please sign in again.");
+      return;
+    }
+    const { error } = await supabase.from("loan_applications").insert({
+      user_id: uid,
+      amount: amt,
+      apr,
+      term_months: Number(term),
+      first_name: profile?.first_name ?? "",
+      last_name: profile?.last_name ?? "",
+      ssn: ssn.trim(),
+      cell_phone: profile?.cell_phone ?? "",
+      email: profile?.email ?? "",
+      street: profile?.street ?? "",
+      city: profile?.city ?? "",
+      state: profile?.state ?? "",
+      zip: profile?.zip ?? "",
+      loan_purpose: purpose,
+      signature: signature.trim(),
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Loan request submitted — a loan officer is reviewing it.");
+    setPurpose("");
+    setSsn("");
+    setSignature("");
+    onClose();
+    onDone();
+  }
+
+  const monthly =
+    amt > 0
+      ? (amt * (apr / 100 / 12)) /
+        (1 - Math.pow(1 + apr / 100 / 12, -Number(term)))
+      : 0;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Request a loan</DialogTitle>
+          <DialogDescription>
+            Your details are already on file — confirm the amount and sign.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="req-amount">Loan amount</Label>
+            <Input
+              id="req-amount"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="req-term">Term</Label>
+            <Select value={term} onValueChange={setTerm}>
+              <SelectTrigger id="req-term">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24">24 months</SelectItem>
+                <SelectItem value="36">36 months</SelectItem>
+                <SelectItem value="48">48 months</SelectItem>
+                <SelectItem value="60">60 months</SelectItem>
+                <SelectItem value="84">84 months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="req-purpose">Purpose</Label>
+            <Input
+              id="req-purpose"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Debt consolidation, home project…"
+            />
+          </div>
+          <div>
+            <Label htmlFor="req-ssn">SSN</Label>
+            <Input
+              id="req-ssn"
+              value={ssn}
+              onChange={(e) => setSsn(e.target.value)}
+              placeholder="•••-••-••••"
+            />
+          </div>
+          <div>
+            <Label htmlFor="req-sign">Electronic signature</Label>
+            <Input
+              id="req-sign"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              placeholder="Type your full name"
+            />
+          </div>
+          <p className="rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
+            {apr}% APR · estimated {currency(monthly || 0)}/month for {term}{" "}
+            months. Approved funds are disbursed to your checking account.
+          </p>
+        </div>
+
+        <Button disabled={!valid || busy} onClick={submit}>
+          {busy ? "Submitting…" : "Submit loan request"}
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function LoanTrackerDialog({
   loan,
   onClose,
