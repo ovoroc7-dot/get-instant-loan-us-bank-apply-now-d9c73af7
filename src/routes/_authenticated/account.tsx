@@ -104,6 +104,7 @@ function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<ActionKind>(null);
   const [receipt, setReceipt] = useState<Txn | null>(null);
+  const [loanDetail, setLoanDetail] = useState<Loan | null>(null);
 
   const load = useCallback(async () => {
     const [a, t, l, p] = await Promise.all([
@@ -261,18 +262,23 @@ function AccountPage() {
           </h2>
           <div className="divide-y">
             {loans.map((l) => (
-              <div key={l.id} className="flex items-center justify-between px-5 py-4">
+              <button
+                type="button"
+                key={l.id}
+                onClick={() => setLoanDetail(l)}
+                className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-accent/5"
+              >
                 <div>
                   <p className="font-medium text-foreground">
                     Personal loan {currency(Number(l.amount))}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {Number(l.apr)}% APR · {l.term_months} months · submitted{" "}
-                    {new Date(l.created_at).toLocaleDateString()}
+                    {new Date(l.created_at).toLocaleDateString()} · Track request
                   </p>
                 </div>
                 <StatusBadge status={l.status} />
-              </div>
+              </button>
             ))}
             {loans.length === 0 && (
               <p className="px-5 py-6 text-sm text-muted-foreground">
@@ -327,6 +333,11 @@ function AccountPage() {
           <ContactSupport />
         </section>
       </main>
+
+      <LoanTrackerDialog
+        loan={loanDetail}
+        onClose={() => setLoanDetail(null)}
+      />
 
       <MoneyDialog
         action={action}
@@ -446,6 +457,99 @@ function StatusBadge({ status }: { status: Loan["status"] }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
       <Clock className="h-3.5 w-3.5" /> Under review
     </span>
+  );
+}
+
+function LoanTrackerDialog({
+  loan,
+  onClose,
+}: {
+  loan: Loan | null;
+  onClose: () => void;
+}) {
+  if (!loan) return null;
+  const submitted = new Date(loan.created_at);
+  const decided = loan.disbursed_at ? new Date(loan.disbursed_at) : null;
+  const steps = [
+    {
+      label: "Application submitted",
+      note: submitted.toLocaleString(),
+      done: true,
+    },
+    {
+      label: "Under review by loan officer",
+      note:
+        loan.status === "pending"
+          ? "In progress — you'll be notified the moment a decision is made."
+          : "Completed",
+      done: true,
+      active: loan.status === "pending",
+    },
+    {
+      label: loan.status === "declined" ? "Declined" : "Approved & disbursed",
+      note:
+        loan.status === "approved"
+          ? `Funds sent to your checking account${decided ? ` on ${decided.toLocaleString()}` : ""}`
+          : loan.status === "declined"
+            ? "Contact support for details."
+            : "Pending decision",
+      done: loan.status !== "pending",
+    },
+  ];
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Personal loan {currency(Number(loan.amount))}</DialogTitle>
+          <DialogDescription>
+            {Number(loan.apr)}% APR · {loan.term_months} months
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex justify-center">
+          <StatusBadge status={loan.status} />
+        </div>
+
+        <ol className="mt-4 space-y-4">
+          {steps.map((s, i) => (
+            <li key={i} className="flex gap-3">
+              <div className="mt-0.5">
+                {s.done ? (
+                  s.active ? (
+                    <Clock className="h-5 w-5 text-accent" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5 text-accent" />
+                  )
+                ) : (
+                  <Clock className="h-5 w-5 text-muted-foreground/50" />
+                )}
+              </div>
+              <div>
+                <p
+                  className={
+                    s.done
+                      ? "text-sm font-medium text-foreground"
+                      : "text-sm font-medium text-muted-foreground"
+                  }
+                >
+                  {s.label}
+                </p>
+                <p className="text-xs text-muted-foreground">{s.note}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-2 rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
+          Reference: {loan.id.slice(0, 8).toUpperCase()}
+        </div>
+
+        <Button variant="outline" onClick={onClose}>
+          Close
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }
 
