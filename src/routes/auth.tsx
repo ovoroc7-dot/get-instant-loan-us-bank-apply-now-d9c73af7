@@ -129,6 +129,16 @@ function AuthPage() {
               Apply for a loan
             </Link>
           </p>
+
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Loan officer?{" "}
+            <Link
+              to="/officer"
+              className="font-medium text-primary hover:underline"
+            >
+              Open the officer portal
+            </Link>
+          </p>
         </form>
       </main>
     </div>
