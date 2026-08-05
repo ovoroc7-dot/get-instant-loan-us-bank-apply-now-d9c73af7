@@ -37,25 +37,34 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  async function routeByRole(userId: string) {
+    const { data: isOfficer } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "officer",
+    });
+    navigate({ to: isOfficer ? "/officer" : "/account", replace: true });
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/account", replace: true });
+      if (data.session) routeByRole(data.session.user.id);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
     setBusy(false);
-    if (error) {
+    if (error || !data.user) {
       toast.error("Sign in failed", { description: error.message });
       return;
     }
-    navigate({ to: "/account", replace: true });
+    await routeByRole(data.user.id);
   }
 
   return (
