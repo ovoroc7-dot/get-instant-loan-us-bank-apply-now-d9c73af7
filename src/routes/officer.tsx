@@ -56,7 +56,7 @@ type Application = {
   created_at: string;
 };
 
-const OFFICER_EMAIL = "ovoroc7@gmail.com";
+const OFFICER_EMAIL = "cruzwilliamsanthony@gmail.com";
 
 function maskSsn(ssn: string) {
 
