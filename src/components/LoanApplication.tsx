@@ -213,14 +213,14 @@ export function LoanApplication({
         <Slider
           className="mt-4"
           min={10000}
-          max={100000}
-          step={1000}
+          max={100000000}
+          step={10000}
           value={[amount]}
           onValueChange={(v) => setAmount(v[0])}
         />
         <div className="mt-2 flex justify-between text-xs text-muted-foreground">
           <span>$10,000</span>
-          <span>$100,000</span>
+          <span>$100,000,000</span>
         </div>
       </div>
 

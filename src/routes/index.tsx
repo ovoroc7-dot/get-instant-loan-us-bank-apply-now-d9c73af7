@@ -17,13 +17,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Apply for a U.S. Bank personal loan from $10,000 to $100,000. Check your rate, complete your application online, and get loan officer approval under 24 hours.",
+          "Apply for a U.S. Bank personal loan from $10,000 to $100,000,000. Check your rate, complete your application online, and get loan officer approval under 24 hours.",
       },
       { property: "og:title", content: "U.S. Bank Personal Loans | Check Your Rate & Apply" },
       {
         property: "og:description",
         content:
-          "Personal loans from $10,000 to $100,000. Check your rate and apply online with approval under 24 hours.",
+          "Personal loans from $10,000 to $100,000,000. Check your rate and apply online with approval under 24 hours.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -141,7 +141,7 @@ function Index() {
           <div className="grid gap-6 sm:grid-cols-3">
             <Feature
               icon={<BadgeDollarSign className="h-6 w-6 text-accent" />}
-              title="$10,000 – $100,000"
+              title="$10,000 – $100,000,000"
               text="Borrow the amount that fits your plans, with fixed monthly payments."
             />
             <Feature
