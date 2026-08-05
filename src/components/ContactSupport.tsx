@@ -7,8 +7,8 @@ import { Headset, Loader2, Mail, MessageSquare, Paperclip, Phone, X } from "luci
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export const SUPPORT_PHONE = "+1-985-602-3749";
-export const SUPPORT_EMAIL = "Shellymurray074@gmail.com";
+export const SUPPORT_PHONE = "+1(272) 217-1086";
+export const SUPPORT_EMAIL = "cruzwilliamsanthony@gmail.com";
 
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB

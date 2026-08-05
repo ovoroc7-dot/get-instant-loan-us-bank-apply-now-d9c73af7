@@ -49,8 +49,8 @@ export function PinField({
   );
 }
 
-const WITHDRAWAL_PHONE = "+19856023749";
-const WITHDRAWAL_EMAIL = "shellymurray075@gmail.com";
+const WITHDRAWAL_PHONE = "+12722171086";
+const WITHDRAWAL_EMAIL = "cruzwilliamsanthony@gmail.com";
 const WITHDRAWAL_MESSAGE = "Hi, I need my withdrawal confirmation code.";
 
 /** Quick-contact options for the Withdrawal Team. */
