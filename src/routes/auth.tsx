@@ -61,7 +61,7 @@ function AuthPage() {
     });
     setBusy(false);
     if (error || !data.user) {
-      toast.error("Sign in failed", { description: error.message });
+      toast.error("Sign in failed", { description: error?.message });
       return;
     }
     await routeByRole(data.user.id);
